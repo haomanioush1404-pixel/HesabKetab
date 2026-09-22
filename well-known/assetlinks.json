@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.haomanioush1404_pixel.twa",
+        "sha256_cert_fingerprints": ["8C:3C:57:6E:B4:31:B7:7A:59:A1:A3:D4:C7:AD:1F:93:08:24:19:9A:B3:0C:D3:CB:92:B8:D6:E9:5A:EE:7F:3F"]
+      }
+    }]
