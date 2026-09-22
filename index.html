@@ -186,6 +186,7 @@
 
   <div class="topbar">
     <button class="theme-btn" id="themeBtn" title="تم">🌗</button>
+    <button class="theme-btn" id="settingsBtn" title="تنظیمات" style="left:auto; right:16px;">⚙️</button>
     <div class="month-switch">
       <button id="prevMonth">‹</button>
       <div class="lbl" id="monthLbl">—</div>
@@ -307,6 +308,27 @@
       <button class="btn danger" id="catDeleteBtn" style="display:none;">حذف</button>
       <button class="btn ghost" id="catCancelBtn">انصراف</button>
       <button class="btn primary" id="catSaveBtn">ذخیره</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="settingsOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>تنظیمات و پشتیبان‌گیری</h2>
+    <div class="field">
+      <label>خروجی گرفتن</label>
+      <div class="sub" style="margin:0 0 10px;">همه‌ی تراکنش‌ها و دسته‌بندی‌ها رو توی یه فایل ذخیره کن تا اگه گوشی عوض شد یا کش پاک شد، از دستشون ندی.</div>
+      <button class="btn primary" id="exportBtn" style="width:100%;">📤 دانلود فایل پشتیبان</button>
+    </div>
+    <div class="field">
+      <label>بازیابی از فایل پشتیبان</label>
+      <div class="sub" style="margin:0 0 10px;">با انتخاب یه فایل پشتیبان، اطلاعات فعلی با محتوای اون فایل جایگزین می‌شه.</div>
+      <button class="btn ghost" id="importBtn" style="width:100%;">📥 انتخاب فایل و بازیابی</button>
+      <input type="file" id="importFileInput" accept="application/json" style="display:none;">
+    </div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="settingsCloseBtn" style="flex:1;">بستن</button>
     </div>
   </div>
 </div>
@@ -867,6 +889,49 @@ document.getElementById('catDeleteBtn').addEventListener('click', ()=>{
   if(!editingCatId) return;
   quickDeleteCat(editingCatId);
   catOverlay.classList.remove('open');
+});
+
+/* ============ Settings / Export-Import ============ */
+const settingsOverlay=document.getElementById('settingsOverlay');
+document.getElementById('settingsBtn').addEventListener('click', ()=>settingsOverlay.classList.add('open'));
+document.getElementById('settingsCloseBtn').addEventListener('click', ()=>settingsOverlay.classList.remove('open'));
+settingsOverlay.addEventListener('click', e=>{ if(e.target===settingsOverlay) settingsOverlay.classList.remove('open'); });
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  try{
+    const payload = { app:'hesabdari', exportedAt:new Date().toISOString(), categories:state.categories, transactions:state.transactions.filter(t=>!t.demo) };
+    const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const d = new Date();
+    const stamp = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    a.href = url; a.download = 'hesabdari-backup-'+stamp+'.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    showToast('فایل پشتیبان دانلود شد');
+  }catch(e){ showToast('دانلود انجام نشد'); }
+});
+
+document.getElementById('importBtn').addEventListener('click', ()=>document.getElementById('importFileInput').click());
+document.getElementById('importFileInput').addEventListener('change', function(){
+  const file = this.files && this.files[0];
+  this.value = '';
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    let data;
+    try{ data = JSON.parse(e.target.result); }catch(err){ showToast('این فایل معتبر نیست'); return; }
+    if(!data || !Array.isArray(data.categories) || !Array.isArray(data.transactions)){ showToast('این فایل معتبر نیست'); return; }
+    const ok = confirm('این کار همه‌ی داده‌های فعلی رو با محتوای این فایل پشتیبان جایگزین می‌کنه. مطمئنی؟');
+    if(!ok) return;
+    state.categories = data.categories;
+    state.transactions = data.transactions;
+    persist();
+    settingsOverlay.classList.remove('open');
+    renderAll();
+    showToast('بازیابی با موفقیت انجام شد');
+  };
+  reader.readAsText(file);
 });
 
 /* ============ Boot ============ */
